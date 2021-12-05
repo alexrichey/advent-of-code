@@ -11,22 +11,31 @@
 (define into-list
   (make-effectful-fold-reducer (λ (lst v) (cons v lst)) list reverse))
 
-(define (dir->vector dir)
-  (match dir
-   [(list (regexp #rx"forward") x) (vector x 0)]
-   [(list (regexp #rx"down") x)    (vector 0 x)]
-   [(list (regexp #rx"up") x)      (vector 0 (* -1 x))]
-   [_                              (vector 0 0)]))
+(define (fold-commands accum command)
+  (match command
+    ;; down X increases your aim by X units.
+    [(list (regexp #rx"down") x) (map + accum (list 0 0 x))]
+    ;; up X decreases your aim by X units.
+    [(list (regexp #rx"up") x)   (map + accum (list 0 0 (* -1 x)))]
+
+    ;; forward X does two things:
+    ;;    It increases your horizontal position by X units.
+    ;;    It increases your depth by your aim multiplied by X.
+    [(list (regexp #rx"forward") x)
+     (let ([aim (third accum)])
+       (list (+ x (first accum))
+             (+ (* aim x) (second accum))
+             aim))]
+    [_ accum]))
 
 (define summed-vec
   (transduce (file->lines  "resources/02.txt")
              (mapping (λ (x) (string-split x " ")))
              (mapping (λ (x) (list (first x)
                                    (string->number (second x)))))
-             (mapping dir->vector)
-             (folding (λ (x y) (vector-map + x y))
-                      (vector 0 0))
-             (mapping (λ (x) (vector-map * x)))
+             (folding fold-commands (list 0 0 0))
              #:into into-last))
 
-(apply * (vector->list (present-value summed-vec)))
+
+(define output (* (first (present-value summed-vec))
+                  (second (present-value summed-vec))))
