@@ -9,10 +9,14 @@ main = do
 
         let calorieWords = splitOn "\n" contents
 
-        print(maximum
-              (map sum
-               (partitionCalsByElf calorieWords)))
+        -- Part 1
+        -- print(maximum
+        --       (map sum
+        --        (partitionCalsByElf calorieWords)))
 
+        let sums = (map sum
+                      (partitionCalsByElf calorieWords))
+        print $ (sum . (take 3) . reverse . sort ) sums
         hClose handle
 
 -- Takes an input list of calories, and partitions calories by elf,
@@ -49,6 +53,7 @@ _partitionCalsByElf (x: xs) nxt ret = _partitionCalsByElf xs (nxt ++ [read x]) r
 - I'm not convinced that my recursive solution to group the calories is a good one.
   - I probably should have used groupdBy with a regex, but I didn't want to pull in any more libs than needed
   - speaking of which, how on earth do dependencies work in this ecosystem?
+- HOW ON EARTH isn't there a one-line example for sorting a list of ints descending?!
 
 -- TODO
 - Have actual valid function docs?
