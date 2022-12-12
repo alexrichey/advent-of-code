@@ -26,18 +26,28 @@ score (theirs, mine) = myHandScore + winScore
 
 fromStringPair :: String -> (RPS, RPS)
 fromStringPair "" = (None, None)
-fromStringPair s = (head lst, last lst)
+fromStringPair s = (theirs, mine)
   where
-    lst = map fromString (words s)
+    charPair = words s
+    theirs = case head charPair of "A"-> Rock
+                                   "B"-> Paper
+                                   "C"-> Scissors
+                                   _  -> None
 
-fromString :: String -> RPS
-fromString s = case s of "A"-> Rock
-                         "X"-> Rock
-                         "B"-> Paper
-                         "Y"-> Paper
-                         "C"-> Scissors
-                         "Z"-> Scissors
-                         _  -> None
+    mine = case last charPair of "X"-> findLosingHandAgainst theirs
+                                 "Y"-> theirs
+                                 "Z"-> findWinningHandAgainst theirs
+                                 _  -> None
+
+findLosingHandAgainst :: RPS -> RPS
+findLosingHandAgainst h = case h of Rock -> Scissors
+                                    Paper -> Rock
+                                    Scissors -> Paper
+
+findWinningHandAgainst :: RPS -> RPS
+findWinningHandAgainst h = case h of Rock -> Paper
+                                     Paper -> Scissors
+                                     Scissors -> Rock
 
 data RPS = Rock | Paper | Scissors | None deriving (Eq, Show)
 
