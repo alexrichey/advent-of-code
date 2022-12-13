@@ -21,7 +21,7 @@ main = do
 
 move :: [[Char]] -> Instruction -> [[Char]]
 move crates i = map moveCrates (zip [1..] crates)
-  where toMove = reverse $ take (moveCount i) (crates !! (fromCol i - 1))
+  where toMove = take (moveCount i) (crates !! (fromCol i - 1))
         moveCrates (idx, stack)
           | idx == fromCol i = drop (length toMove) stack
           | idx == toCol i   = toMove ++ stack
