@@ -1,34 +1,42 @@
 import System.IO
-import Data.Char (isSpace)
 import Data.Function (on)
 import Data.List.Split
 import Data.List
 import Data.Maybe
 import Data.Range
-import qualified Data.Set as Set
-import qualified Data.Text as Text
-import qualified Data.Map as Map
+import qualified Control.Spoon as Spoon
 import Text.Regex
 
 main = do
-   handle <- openFile "../inputs/day_15/input.txt" ReadMode
+   handle <- openFile "../inputs/day_15/input_test.txt" ReadMode
    raw <- hGetContents handle
    let lines = splitOn "\n" raw
-       pairs = catMaybes $ map parseInputLine lines
+       pairs = mapMaybe parseInputLine lines
 
        -- Blah
-       minX = minimum [(fst . sensor) $ minimumBy (compare `on` (fst . sensor)) pairs,
-                       (fst . beacon) $ minimumBy (compare `on` (fst . beacon)) pairs]
-       maxX = maximum [(fst . sensor) $ maximumBy (compare `on` (fst . sensor)) pairs,
-                       (fst . beacon) $ maximumBy (compare `on` (fst . beacon)) pairs]
+       minX = min [(fst . sensor) $ minimumBy (compare `on` (fst . sensor)) pairs,
+                   (fst . beacon) $ minimumBy (compare `on` (fst . beacon)) pairs]
+       maxX = max [(fst . sensor) $ maximumBy (compare `on` (fst . sensor)) pairs,
+                   (fst . beacon) $ maximumBy (compare `on` (fst . beacon)) pairs]
+       inBounds = [0 +=+ 20]
 
-       targetY = 2000000
-       layerSlices = mergeRanges $ catMaybes $ map (sensorLayerSlice targetY) pairs
+       unMaybe :: Maybe [Int] -> [Int]
+       unMaybe x = case x of Nothing -> []
+                             _       -> fromJust x
 
-       beaconsInSlice = filter (\p -> (snd . beacon) p == targetY) pairs
-       beaconRanges = mergeRanges $ map (SingletonRange . snd . beacon) beaconsInSlice
+       -- BLAH
+       sliceGenerator :: Int -> [Int]
+       sliceGenerator y = take 5 -- dumb hack to see whether the range has elements
+                          $ unMaybe
+                          $ (Spoon.spoon . fromRanges) -- fromRanges is buggy :(
+                          $ difference inBounds -- ensure everything is in bounds
+                          $ mergeRanges
+                          $ mapMaybe (sensorLayerSlice y) pairs
 
-   print $ length $ fromRanges $ difference layerSlices beaconRanges
+   print $ head (dropWhile (null . fst)
+                  (zip [sliceGenerator y | y <- [0..]]
+                        [0..]))
+
 
 
 -- Given a targetDepth (y), determine the slices of x in which the sensor would find beacons
@@ -36,9 +44,9 @@ sensorLayerSlice :: Int -> Pair -> Maybe (Range Int)
 sensorLayerSlice targetDepth pair =
   if maxDist < abs (targetDepth - sY)
   then Nothing
-    else Just ((sX - (maxDist - (abs (sY - targetDepth))))
+    else Just ((sX - (maxDist - abs (sY - targetDepth)))
               +=+
-              (sX + (maxDist - (abs (sY - targetDepth)))))
+              (sX + (maxDist - abs (sY - targetDepth))))
   where
     maxDist = taxiDistance (sensor pair) (beacon pair)
     (sX, sY) = sensor pair
@@ -52,15 +60,8 @@ parseInputLine s = Just Pair {sensor=(sx,sy), beacon=(bx,by)}
         matches :: [Int] = map read $ fromJust (matchRegex r s)
         ([sx, sy], [bx, by]) = splitAt 2 matches
 
--- Make a lil diamond around the given coord
-coordsInRange :: Coord -> Int -> [Coord]
-coordsInRange (cX, cY) range = concat zs
-  where zs = [
-                [(x, y) | x <- [cX - (range - (abs (cY - y))) .. cX + (range - (abs (cY - y)))]]
-              | y <- [cY-range..cY+range]]
-
 taxiDistance :: Coord -> Coord -> Int
-taxiDistance (x1, x2) (y1, y2) = (abs $ x1 - y1) + (abs $ x2 - y2)
+taxiDistance (x1, x2) (y1, y2) = abs (x1 - y1) + abs (x2 - y2)
 
 type Coord = (Int, Int)
 data Pair = Pair {sensor :: Coord, beacon :: Coord} deriving (Show)
