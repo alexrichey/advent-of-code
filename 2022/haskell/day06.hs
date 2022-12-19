@@ -8,6 +8,6 @@ main = do
 
 findPacketStart :: String -> Int -> Int
 findPacketStart packet@(x:xs) startIndex =
-  if ((4==) . length . nub . take 4) packet
-        then startIndex + 4
+  if ((14==) . length . nub . take 14) packet
+        then startIndex + 14
         else findPacketStart xs startIndex+1
